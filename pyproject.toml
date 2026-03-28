@@ -14,7 +14,7 @@ dependencies = [
 [project.scripts]
 converterrier = "converterrier.cli:main"
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=7.0",
     "httpx>=0.24",

@@ -53,11 +53,31 @@ FFmpeg and Pandoc are optional - the app will gracefully disable conversion type
 ## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/Lorakszak/Converterrier.git && cd Converterrier
-uv sync
+git clone https://github.com/Lorakszak/Converterrier.git
+cd Converterrier
+```
 
-# Run
+### Using pip
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+pip install .
+converterrier
+```
+
+### Using uv
+
+Install [uv](https://docs.astral.sh/uv/) if you don't have it:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then:
+
+```bash
+uv sync
 uv run converterrier
 ```
 
@@ -66,8 +86,8 @@ This starts the server on `http://localhost:8000` and opens your browser automat
 ### CLI Options
 
 ```bash
-uv run converterrier --port 3000        # custom port
-uv run converterrier --max-size 500     # max upload size in MB (default: 2048)
+converterrier --port 3000        # custom port
+converterrier --max-size 500     # max upload size in MB (default: 2048)
 ```
 
 ## Features
@@ -83,9 +103,14 @@ uv run converterrier --max-size 500     # max upload size in MB (default: 2048)
 ### Backend
 
 ```bash
-uv sync                                  # install dependencies
-uv run pytest -v                         # run tests
-uv run uvicorn converterrier.app:create_app --factory --reload --port 8000  # dev server
+# Install with dev dependencies
+pip install -e ".[dev]"    # or: uv sync --extra dev
+
+# Run tests
+pytest -v                  # or: uv run pytest -v
+
+# Dev server with auto-reload
+uvicorn converterrier.app:create_app --factory --reload --port 8000
 ```
 
 ### Frontend
