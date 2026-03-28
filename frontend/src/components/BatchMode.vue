@@ -1,19 +1,31 @@
 <script setup>
 import { ref } from 'vue'
 
+const props = defineProps({
+  existingFiles: {
+    type: Array,
+    default: () => [],
+  },
+})
+
 const emit = defineEmits(['files-selected'])
 const dragging = ref(false)
 const fileInput = ref(null)
 
+function addFiles(newFiles) {
+  if (!newFiles.length) return
+  const combined = [...props.existingFiles, ...newFiles]
+  emit('files-selected', combined)
+}
+
 function onDrop(e) {
   dragging.value = false
-  const files = Array.from(e.dataTransfer.files)
-  if (files.length) emit('files-selected', files)
+  addFiles(Array.from(e.dataTransfer.files))
 }
 
 function onFileChange(e) {
-  const files = Array.from(e.target.files)
-  if (files.length) emit('files-selected', files)
+  addFiles(Array.from(e.target.files))
+  e.target.value = ''
 }
 
 function openFilePicker() {

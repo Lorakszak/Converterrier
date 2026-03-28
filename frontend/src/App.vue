@@ -14,7 +14,8 @@ const selectedFiles = ref([])
 const targetFormat = ref('')
 const settings = ref({})
 const converting = ref(false)
-const batchMode = ref(false)
+const activeTab = ref('single')
+const darkMode = ref(true)
 
 const fileInfo = computed(() => {
   if (!selectedFile.value) return null
@@ -73,6 +74,19 @@ const batchSettingsSchema = computed(() => {
   return cat[batchInfo.value.ext].settings
 })
 
+const categoryList = computed(() => {
+  const cats = []
+  for (const [cat, catFormats] of Object.entries(formats.value)) {
+    const sourceFormats = Object.keys(catFormats)
+    const targetFormats = new Set()
+    for (const fmt of Object.values(catFormats)) {
+      for (const t of fmt.targets) targetFormats.add(t)
+    }
+    cats.push({ name: cat, sources: sourceFormats, targets: [...targetFormats] })
+  }
+  return cats
+})
+
 function formatFileSize(bytes) {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
@@ -99,10 +113,24 @@ function onBatchFilesSelected(files) {
   error.value = ''
 }
 
+function removeBatchFile(index) {
+  selectedFiles.value = selectedFiles.value.filter((_, i) => i !== index)
+  if (!selectedFiles.value.length) {
+    targetFormat.value = ''
+    settings.value = {}
+  }
+}
+
 function clearBatch() {
   selectedFiles.value = []
   targetFormat.value = ''
   settings.value = {}
+}
+
+function toggleTheme() {
+  darkMode.value = !darkMode.value
+  document.documentElement.setAttribute('data-theme', darkMode.value ? 'dark' : 'light')
+  localStorage.setItem('converterrier-theme', darkMode.value ? 'dark' : 'light')
 }
 
 async function doConvert() {
@@ -184,6 +212,12 @@ async function doBatchConvert() {
 }
 
 onMounted(async () => {
+  const savedTheme = localStorage.getItem('converterrier-theme')
+  if (savedTheme === 'light') {
+    darkMode.value = false
+    document.documentElement.setAttribute('data-theme', 'light')
+  }
+
   try {
     const [healthRes, formatsRes] = await Promise.all([
       fetch('/api/health'),
@@ -205,6 +239,9 @@ onMounted(async () => {
         <span class="app-name">Converterrier</span>
       </div>
       <div class="header-right">
+        <button class="theme-toggle" @click="toggleTheme" :title="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
+          {{ darkMode ? '☀️' : '🌙' }}
+        </button>
         <span :class="['status', health.ffmpeg ? 'ok' : 'missing']">
           {{ health.ffmpeg ? '●' : '○' }} FFmpeg
         </span>
@@ -216,10 +253,13 @@ onMounted(async () => {
 
     <main class="main">
       <div class="tabs">
-        <button :class="['tab', { active: !batchMode }]" @click="batchMode = false">
+        <button :class="['tab', { active: activeTab === 'about' }]" @click="activeTab = 'about'">
+          About
+        </button>
+        <button :class="['tab', { active: activeTab === 'single' }]" @click="activeTab = 'single'">
           Single File
         </button>
-        <button :class="['tab', { active: batchMode }]" @click="batchMode = true">
+        <button :class="['tab', { active: activeTab === 'batch' }]" @click="activeTab = 'batch'">
           Batch Mode
         </button>
       </div>
@@ -228,7 +268,7 @@ onMounted(async () => {
         <p v-if="error" class="error-banner">{{ error }}</p>
 
         <!-- Single file mode -->
-        <template v-if="!batchMode">
+        <template v-if="activeTab === 'single'">
           <FileUpload v-if="!selectedFile" @file-selected="onFileSelected" />
 
           <div v-else class="file-info">
@@ -268,7 +308,7 @@ onMounted(async () => {
         </template>
 
         <!-- Batch mode -->
-        <template v-if="batchMode">
+        <template v-if="activeTab === 'batch'">
           <BatchMode v-if="!selectedFiles.length" @files-selected="onBatchFilesSelected" />
 
           <template v-else>
@@ -278,14 +318,21 @@ onMounted(async () => {
                   <span class="format-badge">{{ batchInfo?.ext?.toUpperCase() }}</span>
                   <span class="file-name">{{ batchInfo?.count }} files selected</span>
                 </div>
-                <button class="remove-btn" @click="clearBatch">✕ Clear</button>
+                <button class="remove-btn" @click="clearBatch">✕ Clear all</button>
               </div>
               <ul class="batch-list">
                 <li v-for="(f, i) in selectedFiles" :key="i" class="batch-item">
-                  {{ f.name }} — {{ formatFileSize(f.size) }}
+                  <span>{{ f.name }} · {{ formatFileSize(f.size) }}</span>
+                  <button class="batch-remove-btn" @click="removeBatchFile(i)">✕</button>
                 </li>
               </ul>
             </div>
+
+            <BatchMode
+              class="add-more-zone"
+              :existing-files="selectedFiles"
+              @files-selected="onBatchFilesSelected"
+            />
 
             <div v-if="batchInfo?.category" class="conversion-row">
               <FormatSelector v-model="targetFormat" :targets="batchTargets" />
@@ -306,11 +353,65 @@ onMounted(async () => {
             </div>
           </template>
         </template>
+
+        <!-- About page -->
+        <template v-if="activeTab === 'about'">
+          <div class="about">
+            <div class="about-header">
+              <span class="about-logo">🐕</span>
+              <div>
+                <h2>Converterrier</h2>
+                <p class="about-tagline">Fast local file converter</p>
+              </div>
+            </div>
+
+            <p class="about-description">
+              Converterrier is a local file format converter with a browser-based UI.
+              All conversions happen entirely on your machine. No files are uploaded
+              to any server. Just pick a file, choose a target format, and convert.
+            </p>
+
+            <h3>Capabilities</h3>
+
+            <div v-if="categoryList.length" class="capabilities">
+              <div v-for="cat in categoryList" :key="cat.name" class="capability-card">
+                <h4>{{ cat.name }}</h4>
+                <p class="cap-label">Source formats</p>
+                <div class="cap-formats">
+                  <span v-for="f in cat.sources" :key="f" class="format-badge">{{ f.toUpperCase() }}</span>
+                </div>
+                <p class="cap-label">Target formats</p>
+                <div class="cap-formats">
+                  <span v-for="f in cat.targets" :key="f" class="format-badge target">{{ f.toUpperCase() }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="about-tools">
+              <h3>External tools</h3>
+              <p>Some conversions require external tools installed on your system:</p>
+              <ul>
+                <li>
+                  <strong>FFmpeg</strong> - audio &amp; video conversions
+                  <span :class="['status', health.ffmpeg ? 'ok' : 'missing']">
+                    {{ health.ffmpeg ? '● installed' : '○ not found' }}
+                  </span>
+                </li>
+                <li>
+                  <strong>Pandoc</strong> - document conversions
+                  <span :class="['status', health.pandoc ? 'ok' : 'missing']">
+                    {{ health.pandoc ? '● installed' : '○ not found' }}
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </template>
       </div>
     </main>
 
     <footer class="footer">
-      All conversions happen locally on your machine — no files are uploaded anywhere
+      All conversions happen locally on your machine. No files are uploaded anywhere
     </footer>
   </div>
 </template>
@@ -334,9 +435,21 @@ onMounted(async () => {
 .header-left { display: flex; align-items: center; gap: 10px; }
 .logo { font-size: 1.4rem; }
 .app-name { font-size: 1.1rem; font-weight: 600; }
-.header-right { display: flex; gap: 16px; font-size: 0.85rem; }
+.header-right { display: flex; align-items: center; gap: 16px; font-size: 0.85rem; }
 .status.ok { color: var(--success); }
 .status.missing { color: var(--error); }
+
+.theme-toggle {
+  background: transparent;
+  font-size: 1.1rem;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  background: var(--border);
+}
 
 .main {
   flex: 1;
@@ -454,10 +567,143 @@ onMounted(async () => {
   font-size: 0.85rem;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .batch-item:last-child {
   border-bottom: none;
+}
+
+.batch-remove-btn {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.batch-remove-btn:hover { color: var(--error); }
+
+.add-more-zone {
+  margin-top: 12px;
+}
+
+.add-more-zone :deep(.dropzone) {
+  padding: 16px;
+  border-style: dashed;
+}
+
+.add-more-zone :deep(.dropzone-icon) {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+
+.add-more-zone :deep(.dropzone-text) {
+  font-size: 0.85rem;
+}
+
+.add-more-zone :deep(.dropzone-hint) {
+  font-size: 0.75rem;
+}
+
+/* About page */
+.about {
+  line-height: 1.6;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.about-logo {
+  font-size: 2.5rem;
+}
+
+.about-header h2 {
+  font-size: 1.3rem;
+  margin-bottom: 2px;
+}
+
+.about-tagline {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.about-description {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+
+.about h3 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.capabilities {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.capability-card {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.capability-card h4 {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+}
+
+.cap-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  margin-top: 8px;
+}
+
+.cap-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.format-badge.target {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--success);
+}
+
+.about-tools {
+  margin-top: 4px;
+}
+
+.about-tools p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.about-tools ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.about-tools li {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .footer {
