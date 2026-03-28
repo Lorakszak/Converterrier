@@ -1,6 +1,6 @@
 # Converterrier
 
-Local tool for quick file format conversion across images, audio, video, text and more. Runs entirely on your machine - no uploads, no waiting.
+Local tool for quick file format conversion across images, audio, video, text and more. Runs entirely on your machine - no uploads, no waiting. Supports dark/light theme, single and batch file conversion, and an About page listing all capabilities.
 
 ## Supported Formats
 

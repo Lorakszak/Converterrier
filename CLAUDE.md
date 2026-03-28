@@ -22,11 +22,11 @@ cd frontend && npm run build     # rebuild frontend into src/converterrier/stati
 
 ## Architecture
 
-- `src/converterrier/app.py` — FastAPI app factory (`create_app()`)
-- `src/converterrier/cli.py` — CLI entry point, parses args, starts uvicorn + opens browser
-- `src/converterrier/converters/base.py` — abstract `BaseConverter` interface all converters implement
-- `src/converterrier/converters/__init__.py` — converter registry (`get_converter_for_format`, `get_all_formats`)
-- `src/converterrier/routes/convert.py` — handles file upload, conversion, and download (single + batch)
+- `src/converterrier/app.py` - FastAPI app factory (`create_app()`)
+- `src/converterrier/cli.py` - CLI entry point, parses args, starts uvicorn + opens browser
+- `src/converterrier/converters/base.py` - abstract `BaseConverter` interface all converters implement
+- `src/converterrier/converters/__init__.py` - converter registry (`get_converter_for_format`, `get_all_formats`)
+- `src/converterrier/routes/convert.py` - handles file upload, conversion, and download (single + batch)
 - Frontend is a Vue 3 SPA served as static files in production
 
 ## Conventions
@@ -35,7 +35,7 @@ cd frontend && npm run build     # rebuild frontend into src/converterrier/stati
 - Settings schemas are self-describing dicts consumed by the frontend to render controls dynamically
 - Routes use `tempfile.mkdtemp()` for uploads, `BackgroundTasks` for cleanup after response
 - Frontend uses Composition API (`<script setup>`) and scoped CSS throughout
-- No database, no auth — this is a local-only tool
+- No database, no auth - this is a local-only tool
 
 ## Testing
 
