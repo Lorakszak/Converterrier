@@ -1,6 +1,16 @@
-# Converterrier
+<div align="center">
 
-Local tool for quick file format conversion across images, audio, video, text and more. Runs entirely on your machine - no uploads, no waiting. Supports dark/light theme, single and batch file conversion, and an About page listing all capabilities.
+<h1>🐕 Converterrier</h1>
+
+**Local file format converter with a browser-based UI.**
+**No uploads. No cloud. Everything stays on your machine.**
+
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white)](https://www.python.org/)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Vue 3](https://img.shields.io/badge/frontend-Vue%203-4fc08d?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+
+</div>
 
 ## Supported Formats
 
@@ -44,7 +54,7 @@ FFmpeg and Pandoc are optional - the app will gracefully disable conversion type
 
 ```bash
 # Clone and install
-git clone <repo-url> && cd converterrier
+git clone https://github.com/Lorakszak/Converterrier.git && cd Converterrier
 uv sync
 
 # Run
@@ -59,6 +69,14 @@ This starts the server on `http://localhost:8000` and opens your browser automat
 uv run converterrier --port 3000        # custom port
 uv run converterrier --max-size 500     # max upload size in MB (default: 2048)
 ```
+
+## Features
+
+- **Single & batch conversion** - convert one file or many at once
+- **Dark / light theme** - toggle in the top bar, preference saved automatically
+- **About page** - lists all supported formats and detected tools
+- **Drag & drop** - drop files anywhere on the upload zone
+- **Configurable settings** - quality, bitrate, and other options per format
 
 ## Development
 

@@ -10,8 +10,7 @@ node_modules/
 frontend/dist/
 
 # Built frontend served by FastAPI
-src/converterrier/static/*
-!src/converterrier/static/.gitkeep
+src/converterrier/static/
 
 # Temp/IDE
 .idea/
