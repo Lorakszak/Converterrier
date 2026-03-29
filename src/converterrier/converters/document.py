@@ -10,7 +10,7 @@ _PANDOC_INPUT = {
     "pdf": "pdf",
     "html": "html",
     "docx": "docx",
-    "txt": "plain",
+    "txt": "markdown",
 }
 
 
