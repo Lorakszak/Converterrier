@@ -14,7 +14,7 @@ const selectedFiles = ref([])
 const targetFormat = ref('')
 const settings = ref({})
 const converting = ref(false)
-const activeTab = ref('single')
+const activeTab = ref('about')
 const darkMode = ref(true)
 
 const fileInfo = computed(() => {
@@ -294,6 +294,7 @@ onMounted(async () => {
             <SettingsPanel
               v-if="targetFormat"
               :schema="settingsSchema"
+              :target-format="targetFormat"
               @update:settings="settings = $event"
             />
           </div>
@@ -340,6 +341,7 @@ onMounted(async () => {
               <SettingsPanel
                 v-if="targetFormat"
                 :schema="batchSettingsSchema"
+                :target-format="targetFormat"
                 @update:settings="settings = $event"
               />
             </div>
@@ -538,7 +540,7 @@ onMounted(async () => {
 
 .conversion-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   margin-top: 16px;
   flex-wrap: wrap;
@@ -546,7 +548,8 @@ onMounted(async () => {
 
 .settings-divider {
   width: 1px;
-  height: 24px;
+  align-self: stretch;
+  min-height: 24px;
   background: var(--border);
 }
 

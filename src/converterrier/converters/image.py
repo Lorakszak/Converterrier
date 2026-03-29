@@ -17,8 +17,6 @@ _PILLOW_FORMAT = {
     "ico": "ICO",
 }
 
-_QUALITY_FORMATS = {"jpg", "jpeg", "webp"}
-
 _ICO_MAX_SIZE = 256
 
 
@@ -38,12 +36,14 @@ class ImageConverter(BaseConverter):
 
     def get_settings_schema(self, input_format: str) -> dict:
         return {
+            # --- Basic settings (shown by default) ---
             "quality": {
                 "type": "range",
                 "min": 1,
                 "max": 100,
                 "default": 85,
                 "label": "Quality",
+                "formats": ["jpg", "webp"],
             },
             "resize_width": {
                 "type": "number",
@@ -55,7 +55,80 @@ class ImageConverter(BaseConverter):
                 "optional": True,
                 "label": "Height (px)",
             },
+            # --- JPEG advanced ---
+            "progressive": {
+                "type": "checkbox",
+                "default": False,
+                "label": "Progressive",
+                "advanced": True,
+                "formats": ["jpg"],
+            },
+            "optimize": {
+                "type": "checkbox",
+                "default": False,
+                "label": "Optimize",
+                "advanced": True,
+                "formats": ["jpg", "gif"],
+            },
+            "subsampling": {
+                "type": "select",
+                "options": ["auto", "4:4:4", "4:2:2", "4:2:0"],
+                "default": "auto",
+                "label": "Chroma subsampling",
+                "advanced": True,
+                "formats": ["jpg"],
+            },
+            # --- PNG advanced ---
+            "compress_level": {
+                "type": "range",
+                "min": 0,
+                "max": 9,
+                "default": 6,
+                "label": "Compression level",
+                "advanced": True,
+                "formats": ["png"],
+            },
+            # --- WebP advanced ---
+            "lossless": {
+                "type": "checkbox",
+                "default": False,
+                "label": "Lossless",
+                "advanced": True,
+                "formats": ["webp"],
+            },
+            "method": {
+                "type": "range",
+                "min": 0,
+                "max": 6,
+                "default": 4,
+                "label": "Compression effort",
+                "advanced": True,
+                "formats": ["webp"],
+            },
+            # --- TIFF advanced ---
+            "compression": {
+                "type": "select",
+                "options": ["raw", "tiff_lzw", "tiff_adobe_deflate", "packbits"],
+                "default": "raw",
+                "label": "Compression",
+                "advanced": True,
+                "formats": ["tiff"],
+            },
+            # --- GIF advanced ---
+            "interlace": {
+                "type": "checkbox",
+                "default": True,
+                "label": "Interlace",
+                "advanced": True,
+                "formats": ["gif"],
+            },
         }
+
+    _SUBSAMPLING_MAP: dict[str, int] = {
+        "4:4:4": 0,
+        "4:2:2": 1,
+        "4:2:0": 2,
+    }
 
     def convert(self, input_path: Path, output_format: str, settings: dict) -> Path:
         output_path = self._output_path(input_path, output_format)
@@ -74,8 +147,36 @@ class ImageConverter(BaseConverter):
             img = img.convert("RGB")
 
         save_kwargs: dict = {}
-        if output_format in _QUALITY_FORMATS:
+
+        if output_format in ("jpg", "jpeg"):
             save_kwargs["quality"] = settings.get("quality", 85)
+            if settings.get("progressive"):
+                save_kwargs["progressive"] = True
+            if settings.get("optimize"):
+                save_kwargs["optimize"] = True
+            subsampling = settings.get("subsampling", "auto")
+            if subsampling != "auto":
+                save_kwargs["subsampling"] = self._SUBSAMPLING_MAP[subsampling]
+
+        elif output_format == "webp":
+            save_kwargs["quality"] = settings.get("quality", 85)
+            if settings.get("lossless"):
+                save_kwargs["lossless"] = True
+            save_kwargs["method"] = settings.get("method", 4)
+
+        elif output_format == "png":
+            save_kwargs["compress_level"] = settings.get("compress_level", 6)
+
+        elif output_format == "tiff":
+            compression = settings.get("compression", "raw")
+            if compression != "raw":
+                save_kwargs["compression"] = compression
+
+        elif output_format == "gif":
+            if settings.get("optimize", False):
+                save_kwargs["optimize"] = True
+            if "interlace" in settings:
+                save_kwargs["interlace"] = 1 if settings["interlace"] else 0
 
         img.save(output_path, format=pillow_format, **save_kwargs)
         return output_path
